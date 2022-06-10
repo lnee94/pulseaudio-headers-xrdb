@@ -1,0 +1,84 @@
+#!/bin/bash
+package_name="pulseaudio-headers-xrdb"
+package_dir="opt"
+
+
+mkdir build
+cd build
+
+###build source
+apt source pulseaudio
+PULSE_VERSION="$(apt-cache show pulseaudio | sed -n 's/^Version: //p' | cut -d- -f1 | awk -F: '{print $2}')" #thx https://github.com/elboulangero
+rm pulseaudio_*.debian.tar.* pulseaudio_*.dsc pulseaudio_*.orig.tar.*
+cd "pulseaudio-$PULSE_VERSION"
+meson build
+find . -type f \! -name \*.h -delete
+
+find . -mindepth 1 -maxdepth 1 \
+    -name src -o -name build -o -name config.h \
+    -o -exec rm -rf {} +
+
+###build package
+   
+   
+
+mv "$PWD" "../$package_name/"
+cd ..
+mkdir "$package_dir"
+
+mv "$package_name" "$package_dir"
+
+echo -n "2.0
+" > debian-binary #idk why this is here but it is
+ar r "$package_name.deb" debian-binary
+rm debian-binary
+
+
+eval "$(find "$package_dir" | sed "s/.*/md5sum & 2>\/dev\/null/g" )" >md5sum #makes the check sum file
+
+
+
+
+
+
+echo -n 'Package: pulseaudio-headers-xrdb
+Version: 1:15.99.1+dfsg1-1ubuntu1
+Architecture: all
+Maintainer: lnee_94 <a80b0wk5p@mozmail.com>
+Installed-Size: 4564
+Recommends: xrdp,pulseaudio-module-xrdp 
+Priority: optional
+Homepage: http://www.pulseaudio.org
+Description: pulseaudio-headers-xrdb is a dev package for pulseaudio-module-xrdp to make packageing esry
+Original-Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debian.org>
+' >control #makes the control file for packageing
+
+tar -cf control.tar.gz control md5sum
+rm control md5sum
+
+ar r "$package_name.deb" control.tar.gz
+rm control.tar.gz
+
+
+
+tar -cf data.tar.gz opt #makes the data file aka the thing thats contains the files
+ar r "$package_name.deb" data.tar.gz
+rm -r data.tar.gz "$package_dir"
+
+mv "$package_name.deb" ../
+
+cd ..
+
+rm -r build
+
+
+
+
+
+
+
+
+
+
+
+
